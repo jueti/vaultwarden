@@ -259,36 +259,13 @@ jobs:
           # 定义临时文件夹名称
           TEMP_DIR="vaultwarden-${SOURCE_VERSION}-linux-${NORMALIZED_ARCH}-${BASE_IMAGE}"
           mkdir -p "${TEMP_DIR}"
-
+          du -ah
           echo "Copying essential files to ${TEMP_DIR}..."
           
-          # 1. 复制二进制文件
-          if [ -f "./output/vaultwarden" ]; then
-            cp ./output/vaultwarden "${TEMP_DIR}/vaultwarden"
-            chmod +x "${TEMP_DIR}/vaultwarden"
-          else
-            echo "Error: Binary not found!" && exit 1
-          fi
-
-          # 2. 复制 web-vault 目录
-          if [ -d "./output/web-vault" ]; then
-            cp -r ./output/web-vault "${TEMP_DIR}/web-vault"
-          else
-            echo "Warning: web-vault not found."
-          fi
-
-          # 3. 复制脚本文件
-          for script in start.sh healthcheck.sh; do
-            if [ -f "./output/${script}" ]; then
-              cp "./output/${script}" "${TEMP_DIR}/${script}"
-              chmod +x "${TEMP_DIR}/${script}"
-            fi
-          done
-
           # 4. 打包成 .tar.gz
           TARBALL_NAME="${TEMP_DIR}.tar.gz"
           echo "Creating tarball: ${TARBALL_NAME}"
-          tar -czvf "${TARBALL_NAME}" "${TEMP_DIR}"
+          tar -czvf "${TARBALL_NAME}" ./output/
 
           # 显示包大小
           ls -lh "${TARBALL_NAME}"
