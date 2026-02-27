@@ -102,7 +102,7 @@ jobs:
                   # 如果有旧 Tag，生成 "Tag-CommitHash" 格式
                   echo "SOURCE_VERSION=${GIT_LAST_TAG}-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
               else
-              echo "SOURCE_VERSION=${GIT_LAST_TAG}-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
+              echo "SOURCE_VERSION=${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
               echo "⚠️ No tags found in repository. Using version: dev-${SOURCE_COMMIT:0:8}"
           fi
 
