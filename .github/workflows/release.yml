@@ -273,7 +273,7 @@ jobs:
 
           # 导出变量供上传步骤使用
           echo "TARBALL_NAME=${TARBALL_NAME}" >> "${GITHUB_ENV}"
-          echo "ARTIFACT_NAME=${TEMP_DIR}" >> "${GITHUB_ENV}"
+          echo "ARTIFACT_NAME=${TEMP_DIR}-tar" >> "${GITHUB_ENV}"
 
       # --- 修改结束：上传 TAR 包 ---
       - name: Upload Vaultwarden Tarball
