@@ -205,7 +205,6 @@ jobs:
             *.platform=linux/${{ matrix.arch }}
             ${{ env.TAGS }}
             *.output=type=local,dest=./output
-            # *.output=type=image,push-by-digest=true,name-canonical=true,push=true
 
       - name: Extract digest SHA
         env:
