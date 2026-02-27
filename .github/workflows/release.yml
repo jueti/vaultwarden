@@ -249,69 +249,64 @@ jobs:
           name: vaultwarden-${{ env.SOURCE_VERSION }}-linux-${{ env.NORMALIZED_ARCH }}-${{ matrix.base_image }}
           path: vaultwarden-${{ env.NORMALIZED_ARCH }}
 
-      # --- 新增：整理精简版文件 ---
-      - name: Prepare Minimal Artifact
+            # --- 修改开始：整理文件并打包成 TAR ---
+      - name: Prepare and Tar Minimal Files
         env:
           NORMALIZED_ARCH: ${{ env.NORMALIZED_ARCH }}
           BASE_IMAGE: ${{ matrix.base_image }}
           SOURCE_VERSION: ${{ env.SOURCE_VERSION }}
         run: |
-          # 定义Artifact文件夹名称
-          ARTIFACT_DIR="vaultwarden-${SOURCE_VERSION}-linux-${NORMALIZED_ARCH}-${BASE_IMAGE}-minimal"
-          mkdir -p "${ARTIFACT_DIR}"
+          # 定义临时文件夹名称
+          TEMP_DIR="vaultwarden-${SOURCE_VERSION}-linux-${NORMALIZED_ARCH}-${BASE_IMAGE}"
+          mkdir -p "${TEMP_DIR}"
 
-          echo "Copying essential files..."
+          echo "Copying essential files to ${TEMP_DIR}..."
           
-          # 1. 复制二进制文件并重命名
+          # 1. 复制二进制文件
           if [ -f "./output/vaultwarden" ]; then
-            cp ./output/vaultwarden "${ARTIFACT_DIR}/vaultwarden"
-            echo "Copied binary."
+            cp ./output/vaultwarden "${TEMP_DIR}/vaultwarden"
+            chmod +x "${TEMP_DIR}/vaultwarden"
           else
-            echo "Error: Binary not found!"
-            ls -R ./output
-            exit 1
+            echo "Error: Binary not found!" && exit 1
           fi
 
           # 2. 复制 web-vault 目录
           if [ -d "./output/web-vault" ]; then
-            cp -r ./output/web-vault "${ARTIFACT_DIR}/web-vault"
-            echo "Copied web-vault."
+            cp -r ./output/web-vault "${TEMP_DIR}/web-vault"
           else
             echo "Warning: web-vault not found."
           fi
 
-          # 3. 复制启动脚本和健康检查脚本
+          # 3. 复制脚本文件
           for script in start.sh healthcheck.sh; do
             if [ -f "./output/${script}" ]; then
-              cp "./output/${script}" "${ARTIFACT_DIR}/${script}"
-              chmod +x "${ARTIFACT_DIR}/${script}"
-              echo "Copied ${script}."
-            else
-              echo "Warning: ${script} not found."
+              cp "./output/${script}" "${TEMP_DIR}/${script}"
+              chmod +x "${TEMP_DIR}/${script}"
             fi
           done
 
-          # 4. (可选) 如果有 Rocket.toml 或其他配置文件也复制
-          if [ -f "./output/Rocket.toml" ]; then
-            cp ./output/Rocket.toml "${ARTIFACT_DIR}/Rocket.toml"
-          fi
+          # 4. 打包成 .tar.gz
+          TARBALL_NAME="${TEMP_DIR}.tar.gz"
+          echo "Creating tarball: ${TARBALL_NAME}"
+          tar -czvf "${TARBALL_NAME}" "${TEMP_DIR}"
 
-          # 显示最终文件大小
-          echo "Artifact contents:"
-          ls -lhR "${ARTIFACT_DIR}"
-          du -sh "${ARTIFACT_DIR}"
+          # 显示包大小
+          ls -lh "${TARBALL_NAME}"
+          du -sh "${TEMP_DIR}"
 
-          # 导出变量供下一步使用
-          echo "ARTIFACT_DIR=${ARTIFACT_DIR}" >> "${GITHUB_ENV}"
+          # 导出变量供上传步骤使用
+          echo "TARBALL_NAME=${TARBALL_NAME}" >> "${GITHUB_ENV}"
+          echo "ARTIFACT_NAME=${TEMP_DIR}" >> "${GITHUB_ENV}"
 
-      # --- 新增：上传精简包 ---
-      - name: Upload Minimal Artifact
+      # --- 修改结束：上传 TAR 包 ---
+      - name: Upload Vaultwarden Tarball
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: ${{ env.ARTIFACT_DIR }}
-          path: ${{ env.ARTIFACT_DIR }}
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.TARBALL_NAME }}
           retention-days: 5
-          # 如果文件超过 500MB 可能需要分片，但精简版通常很小
+          # 如果包很大，可以开启分片压缩 (可选)
+          # compression-level: 6 
 
   merge-manifests:
     name: Merge manifests
