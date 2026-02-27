@@ -200,8 +200,6 @@ jobs:
           files: docker/docker-bake.hcl
           targets: "${{ matrix.base_image }}-multi"
           set: |
-            *.cache-from=${{ env.BAKE_CACHE_FROM }}
-            *.cache-to=${{ env.BAKE_CACHE_TO }}
             *.platform=linux/${{ matrix.arch }}
             ${{ env.TAGS }}
             *.output=type=local,dest=./output
