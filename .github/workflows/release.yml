@@ -53,8 +53,8 @@ jobs:
       SOURCE_REPOSITORY_URL: "https://github.com/${{ github.repository }}"
     strategy:
       matrix:
-        arch: ["amd64", "arm64", "arm/v7", "arm/v6"]
-        base_image: ["debian","alpine"]
+        arch: ["amd64"]
+        base_image: ["debian"]
 
     steps:
       - name: Initialize QEMU binfmt support
@@ -108,7 +108,7 @@ jobs:
               else
                   # echo "SOURCE_VERSION=${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
                   # echo "⚠️ No tags found in repository. Using version: dev-${SOURCE_COMMIT:0:8}"
-                  echo "SOURCE_VERSION=1.35.4-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
+                  echo "SOURCE_VERSION=1.36.0-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
               fi
           fi
 
