@@ -207,33 +207,6 @@ jobs:
             *.platform=linux/${{ matrix.arch }}
             ${{ env.TAGS }}
             *.output=type=local,dest=./output
-            *.output=type=image,push-by-digest=true,name-canonical=true,push=true
-
-      - name: Extract digest SHA
-        env:
-          BAKE_METADATA: ${{ steps.bake_vw.outputs.metadata }}
-          BASE_IMAGE: ${{ matrix.base_image }}
-        run: |
-          GET_DIGEST_SHA="$(jq -r --arg base "$BASE_IMAGE" '.[$base + "-multi"]."containerimage.digest"' <<< "${BAKE_METADATA}")"
-          echo "DIGEST_SHA=${GET_DIGEST_SHA}" | tee -a "${GITHUB_ENV}"
-
-      - name: Export digest
-        env:
-          DIGEST_SHA: ${{ env.DIGEST_SHA }}
-          RUNNER_TEMP: ${{ runner.temp }}
-        run: |
-          mkdir -p "${RUNNER_TEMP}"/digests
-          digest="${DIGEST_SHA}"
-          touch "${RUNNER_TEMP}/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: digests-${{ env.NORMALIZED_ARCH }}-${{ matrix.base_image }}
-          path: ${{ runner.temp }}/digests/*
-          if-no-files-found: error
-          retention-days: 1
-
       - name: Rename binaries to match target platform
         env:
           NORMALIZED_ARCH: ${{ env.NORMALIZED_ARCH }}
@@ -269,6 +242,7 @@ jobs:
 
   merge-manifests:
     name: Merge manifests
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     needs: docker-build
     environment: 
