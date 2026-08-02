@@ -37,7 +37,7 @@ defaults:
 jobs:
   docker-build:
     name: Build Vaultwarden containers
-    if: ${{ github.repository == 'dani-garcia/vaultwarden' }}
+    # Build artifacts in the fork as well as in upstream.
     environment: 
       name: release
       deployment: false
@@ -53,8 +53,8 @@ jobs:
       SOURCE_REPOSITORY_URL: "https://github.com/${{ github.repository }}"
     strategy:
       matrix:
-        arch: ["amd64", "arm64", "arm/v7", "arm/v6"]
-        base_image: ["debian","alpine"]
+        arch: ["amd64"]
+        base_image: ["debian"]
 
     steps:
       - name: Initialize QEMU binfmt support
@@ -100,8 +100,12 @@ jobs:
           if [[ -n "${GIT_EXACT_TAG}" ]]; then
               echo "SOURCE_VERSION=${GIT_EXACT_TAG}" | tee -a "${GITHUB_ENV}"
           else
-              GIT_LAST_TAG="$(git describe --tags --abbrev=0)"
-              echo "SOURCE_VERSION=${GIT_LAST_TAG}-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
+              GIT_LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+              if [[ -n "${GIT_LAST_TAG}" ]]; then
+                  echo "SOURCE_VERSION=${GIT_LAST_TAG}-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
+              else
+                  echo "SOURCE_VERSION=1.37.1-${SOURCE_COMMIT:0:8}" | tee -a "${GITHUB_ENV}"
+              fi
           fi
 
       # Login to Docker Hub
@@ -241,11 +245,26 @@ jobs:
         with:
           subject-path: vaultwarden-${{ env.NORMALIZED_ARCH }}
 
-      - name: Upload binaries as artifacts
+      - name: Prepare Vaultwarden tarball
+        env:
+          NORMALIZED_ARCH: ${{ env.NORMALIZED_ARCH }}
+          BASE_IMAGE: ${{ matrix.base_image }}
+          SOURCE_VERSION: ${{ env.SOURCE_VERSION }}
+        run: |
+          TEMP_DIR="vaultwarden-${SOURCE_VERSION}-linux-${NORMALIZED_ARCH}-${BASE_IMAGE}"
+          TARBALL_NAME="${TEMP_DIR}.tar.gz"
+          tar -czvf "${TARBALL_NAME}" \
+            "vaultwarden-${NORMALIZED_ARCH}" \
+            ./output/web-vault/ ./output/healthcheck.sh ./output/start.sh
+          echo "TARBALL_NAME=${TARBALL_NAME}" >> "${GITHUB_ENV}"
+          echo "ARTIFACT_NAME=${TEMP_DIR}-tar" >> "${GITHUB_ENV}"
+
+      - name: Upload Vaultwarden tarball
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: vaultwarden-${{ env.SOURCE_VERSION }}-linux-${{ env.NORMALIZED_ARCH }}-${{ matrix.base_image }}
-          path: vaultwarden-${{ env.NORMALIZED_ARCH }}
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.TARBALL_NAME }}
+          retention-days: 5
 
   merge-manifests:
     name: Merge manifests
@@ -260,7 +279,7 @@ jobs:
       id-token: write # Needed to mint the OIDC token necessary to request a Sigstore signing certificate
     strategy:
       matrix:
-        base_image: ["debian","alpine"]
+        base_image: ["debian"]
 
     steps:
       - name: Download digests
