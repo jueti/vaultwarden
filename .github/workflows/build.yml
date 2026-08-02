@@ -59,7 +59,11 @@ jobs:
     steps:
       # Install dependencies
       - name: "Install dependencies Ubuntu"
-        run: apt-get update && apt-get install -y --no-install-recommends curl git ca-certificates openssl build-essential libmariadb-dev-compat libpq-dev libssl-dev pkg-config cmake
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends curl git ca-certificates openssl build-essential libmariadb-dev-compat libpq-dev libssl-dev pkg-config cmake
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
       # End Install dependencies
 
       # Checkout the repo
